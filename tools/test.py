@@ -123,7 +123,7 @@ def main():
         from mmcv.utils import import_modules_from_strings
         import_modules_from_strings(**cfg['custom_imports'])
 
-    # import modules from plguin/xx, registry will be updated
+    # import modules from plguin/xx, registry will be updated !
     if hasattr(cfg, 'plugin'):
         if cfg.plugin:
             import importlib
