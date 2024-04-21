@@ -155,7 +155,7 @@ model = dict(
             variety_loss=True,
             variety_loss_prob=True,
             hidden_size=128,
-            use_trans=True
+            use_trans=False
         ),
     ),
     # model training and testing settings
@@ -295,6 +295,6 @@ evaluation = dict(interval=24)
 runner = dict(type='EpochBasedRunner', max_epochs=24)
 
 find_unused_parameters = True
-load_from = 'hitp_results/epoch_1.pth'
+load_from = 'epoch_1.pth'
 
 fp16 = dict(loss_scale='dynamic')

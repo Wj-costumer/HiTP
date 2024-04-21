@@ -44,7 +44,10 @@ class HiVT(nn.Module):
                  lr: float,
                  weight_decay: float,
                  T_max: int,
-                 decoder=dict
+                 decoder=dict,
+                 global_flag=True,
+                 local_flag=False,
+                 map_flag=False
                  ) -> None:
         super(HiVT, self).__init__()
         self.future_steps = future_steps
@@ -54,7 +57,10 @@ class HiVT(nn.Module):
         self.lr = lr
         self.weight_decay = weight_decay
         self.T_max = T_max
-
+        self.global_flag = global_flag
+        self.local_flag = local_flag
+        self.map_flag = map_flag
+        
         self.local_encoder = LocalEncoder(node_dim=node_dim,
                                           edge_dim=edge_dim,
                                           embed_dim=embed_dim,
@@ -89,7 +95,7 @@ class HiVT(nn.Module):
             return self.decoder(batch_size=1, 
                             inputs=None, 
                             inputs_lengths=None, 
-                            hidden_states=data.x.unsqueeze(0)[:,:,:128], 
+                            hidden_states=data.x.unsqueeze(0)[:,:,:128], # 1 * 1 * 128
                             device=data.x.device,
                             labels=data.y, 
                             labels_is_valid=data.padding_mask, 
@@ -112,9 +118,15 @@ class HiVT(nn.Module):
         else:
             data['rotate_mat'] = None
 
-        local_embed = self.local_encoder(data=data)
-        global_embed = self.global_interactor(data=data, local_embed=local_embed)
-        
+        if self.local_flag:
+            local_embed = self.local_encoder(data=data)
+        else:
+            local_embed = data.x[:, :128]
+            
+        if self.global_flag:
+            global_embed = self.global_interactor(data=data, local_embed=local_embed) # mode_num * agent_num * embed_dim
+        else:
+            global_embed = local_embed.unsqueeze(0) # agent_num * embed_dim -> 1 * agent_num * embed_dim
         return self.decoder(batch_size=1, 
                             inputs=None, 
                             inputs_lengths=None, 

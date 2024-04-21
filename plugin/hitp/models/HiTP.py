@@ -126,6 +126,7 @@ class HiTP(MVXTwoStageDetector):
                  only_matched_query=False,
                  add_branch=False,
                  add_branch_2=False,
+                 use_traj = False,
                  ):
         super(HiTP,
               self).__init__(pts_voxel_layer, pts_voxel_encoder,
@@ -138,7 +139,7 @@ class HiTP(MVXTwoStageDetector):
         self.num_classes = num_classes
         self.bbox_coder = build_bbox_coder(bbox_coder)
         self.pc_range = self.bbox_coder.pc_range
-
+        self.use_traj = use_traj # default use query if use_traj = True, use history trajectories as predictor's input
         self.embed_dims = embed_dims
         self.num_query = num_query
         self.fix_feats = fix_feats
@@ -232,8 +233,11 @@ class HiTP(MVXTwoStageDetector):
         reference_points = reference_points + velo_pad * time_delta
 
         ref_pts = reference_points @ l2g_r1.T + l2g_t1
-        ref_pts = (ref_pts - l2g_t2) @ torch.linalg.inv(l2g_r2).T.type(torch.float)
-
+        try:
+            l2g_r2_inv = torch.linalg.inv(l2g_r2.to('cpu'))
+            ref_pts = (ref_pts - l2g_t2) @ l2g_r2_inv.to(ref_pts.device).T.type(torch.float)
+        except:
+            breakpoint()
         ref_pts[..., 0:1] = (ref_pts[..., 0:1] - pc_range[0]) / (pc_range[3] - pc_range[0])
         ref_pts[..., 1:2] = (ref_pts[..., 1:2] - pc_range[1]) / (pc_range[4] - pc_range[1])
         ref_pts[..., 2:3] = (ref_pts[..., 2:3] - pc_range[2]) / (pc_range[5] - pc_range[2])
@@ -687,22 +691,32 @@ class HiTP(MVXTwoStageDetector):
                                     predictor_utils.extract_from_track_idx_2_boxes(self.track_idx_2_boxes_in_lidar, track_scores, track_ids, track_labels, mapping, num_frame - 1) # global2ego
                                 query = self.add_branch_update_query(output_embedding, past_boxes_list_in_lidar[:, -1, :3], device)
                                 output_embedding = output_embedding + query
-                            _, _, past_boxes_list, _, _ = predictor_utils.extract_from_track_idx_2_boxes(self.track_idx_2_boxes, track_scores, track_ids, track_labels, mapping, num_frame - 1)
+                            _, past_trajs, past_boxes_list, past_trajs_is_valid, _ = predictor_utils.extract_from_track_idx_2_boxes(self.track_idx_2_boxes, track_scores, track_ids, track_labels, mapping, num_frame - 1)
 
                             output_embedding = self.output_embedding_forward(output_embedding)
 
                         num_agent = output_embedding.shape[0]
                         
-                        if not (num_agent > 0):
-                            breakpoint()
-                        
+                        if self.use_traj:
+                            positions = torch.tensor(np.concatenate([past_trajs, np.array(labels_list)], axis=1)).to(device)
+                            padding_mask = torch.tensor(np.concatenate([past_trajs_is_valid, np.array(labels_is_valid_list)], axis=-1), dtype=torch.bool).to(device)
+                            bos_mask = torch.zeros(num_agent, 3, dtype=torch.bool)
+                            bos_mask[:, 0] = padding_mask[:, 0]
+                            bos_mask[:, 1: 3] = ~padding_mask[:, : 2] & padding_mask[:, 1: 3]
+                            bos_mask = bos_mask.to(device)
+                            input_x = torch.tensor(past_trajs).to(device)
+                        else:
+                            positions = None
+                            padding_mask = [np.array(labels_is_valid_list)]
+                            bos_mask = None
+                            input_x = output_embedding
                         pred_data = TemporalData(
-                            x = output_embedding,
-                            positions=None,
+                            x = input_x,
+                            positions=positions,
                             edge_index= torch.LongTensor(list(permutations(range(num_agent), 2))).t().contiguous(),
                             y=[np.array(labels_list)],
                             num_nodes=num_agent,
-                            padding_mask=[np.array(labels_is_valid_list)],
+                            padding_mask=padding_mask,
                             bos_mask=None,
                             rotate_angles=None,
                             lane_vectors=None,

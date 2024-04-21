@@ -176,11 +176,14 @@ class Decoder(nn.Module):
             
             # print('debug: ', actions, actions_is_valid)
             actions_one_hot = F.one_hot(torch.tensor(actions).to(torch.int64), num_classes=self.cls_num) # BS * N * future_step -> BS * N * future_step * cls_num
-            try:
-                outputs = self.variety_loss_decoder(hidden_states[:, -1, :, :]) # [bs, agent_num, 150]
-                outputs_a = self.action_loss_decoder(hidden_states[:, -1, :, :]) # [bs, agent_num, 96]
-            except:
-                breakpoint()
+            # if len(hidden_states.shape) == 4:
+            #     breakpoint()
+            outputs = self.variety_loss_decoder(hidden_states[:, -1, :, :]) # [bs, agent_num, 150]
+            outputs_a = self.action_loss_decoder(hidden_states[:, -1, :, :]) # [bs, agent_num, 96]
+            # else:
+            #     # breakpoint()
+            #     outputs = self.variety_loss_decoder(hidden_states[:, :, :]) # [bs, agent_num, 150]
+            #     outputs_a = self.action_loss_decoder(hidden_states[:, :, :]) # [bs, agent_num, 96]
             if True:
                 if self.train_pred_probs_only:
                     pred_probs = F.log_softmax(self.train_pred_probs_only_decocer(hidden_states), dim=-1)
