@@ -5,6 +5,7 @@ import argparse
 import copy
 import mmcv
 import os
+# os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 import time
 import torch
 import warnings

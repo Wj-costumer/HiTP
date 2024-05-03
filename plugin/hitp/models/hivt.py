@@ -45,8 +45,8 @@ class HiVT(nn.Module):
                  weight_decay: float,
                  T_max: int,
                  decoder=dict,
-                 global_flag=True,
-                 local_flag=False,
+                 global_flag=False,
+                 local_flag=True,
                  map_flag=False
                  ) -> None:
         super(HiVT, self).__init__()

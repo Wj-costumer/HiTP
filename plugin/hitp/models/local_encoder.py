@@ -39,10 +39,10 @@ class LocalEncoder(nn.Module):
                  dropout: float = 0.1,
                  num_temporal_layers: int = 4,
                  local_radius: float = 5.0,
-                 parallel: bool = False) -> None:
+                 parallel: bool = False,
+                 ) -> None:
         super(LocalEncoder, self).__init__()
         self.parallel = parallel
-
         self.drop_edge = DistanceDropEdge(local_radius)
         self.aa_encoder = AAEncoder(node_dim=node_dim,
                                     edge_dim=edge_dim,
@@ -82,11 +82,12 @@ class AAEncoder(MessagePassing):
                  embed_dim: int,
                  num_heads: int = 8,
                  dropout: float = 0.1,
+                 use_gate: bool = False,
                  **kwargs) -> None:
         super(AAEncoder, self).__init__(aggr='add', node_dim=0, **kwargs)
         self.embed_dim = embed_dim
         self.num_heads = num_heads
-
+        self.use_gate = use_gate
         self.center_embed = SingleInputEmbedding(in_channel=node_dim, out_channel=embed_dim)
         self.nbr_embed = MultipleInputEmbedding(in_channels=[node_dim, edge_dim], out_channel=embed_dim)
         self.lin_q = nn.Linear(embed_dim, embed_dim)
@@ -142,8 +143,11 @@ class AAEncoder(MessagePassing):
                inputs: torch.Tensor,
                center_embed: torch.Tensor) -> torch.Tensor:
         inputs = inputs.view(-1, self.embed_dim)
-        gate = torch.sigmoid(self.lin_ih(inputs) + self.lin_hh(center_embed))
-        return inputs + gate * (self.lin_self(center_embed) - inputs)
+        if self.use_gate:
+            gate = torch.sigmoid(self.lin_ih(inputs) + self.lin_hh(center_embed))
+            return inputs + gate * (self.lin_self(center_embed) - inputs)
+        else:
+            return inputs + self.lin_self(center_embed)
 
     def _mha_block(self,
                    center_embed: torch.Tensor,

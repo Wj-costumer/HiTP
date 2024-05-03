@@ -295,6 +295,6 @@ evaluation = dict(interval=24)
 runner = dict(type='EpochBasedRunner', max_epochs=24)
 
 find_unused_parameters = True
-load_from = 'epoch_1.pth'
+load_from = './hitp_mlp_results/epoch_1.pth'
 
 fp16 = dict(loss_scale='dynamic')

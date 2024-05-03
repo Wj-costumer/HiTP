@@ -1018,7 +1018,7 @@ class HiTP(MVXTwoStageDetector):
             '''
             gt_past_trajs, gt_past_trajs_is_valid, gt_future_trajs, gt_future_trajs_is_valid, gt_future_actions, gt_future_actions_is_valid, gt_categories = \
                 predictor_utils.get_gt_past_future_trajs(instance_idx_2_labels)
-
+            # breakpoint()
             labels, labels_is_valid, actions, actions_is_valid = predictor_utils.get_labels_for_tracked_trajs(tracked_trajs, tracked_boxes_is_valid_list,
                                                                                    gt_past_trajs, gt_past_trajs_is_valid,
                                                                                    gt_future_trajs, gt_future_trajs_is_valid,

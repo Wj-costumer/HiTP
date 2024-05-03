@@ -159,9 +159,10 @@ class ClipMatcher(nn.Module):
         assert loss in loss_map, f'do you really want to compute {loss} loss?'
         return loss_map[loss](outputs, gt_instances, indices, **kwargs)
 
-    def update_prediction_loss(self, loss):
-        self.losses_dict['prediction_loss'] = loss
-
+    def update_prediction_loss(self, loss_t, loss_a):
+        self.losses_dict['prediction_loss'] = loss_t
+        self.losses_dict['actions_loss'] = loss_a
+        
     def clear_loss(self):
         for each in list(self.losses_dict.keys()):
             self.losses_dict.pop(each)

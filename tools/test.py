@@ -194,7 +194,7 @@ def main():
     cfg.model.train_cfg = None
     model = build_model(cfg.model, test_cfg=cfg.get('test_cfg'))
     print("The number of parameters: ", count_parameters(model))
-    breakpoint()
+    # breakpoint()
     fp16_cfg = cfg.get('fp16', None)
     if fp16_cfg is not None:
         wrap_fp16_model(model)
